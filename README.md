@@ -4,7 +4,7 @@ Rockchip Patchomatic Suite
 by phjanderson
 
 More info / discussion:  
-http://www.freaktab.com/showthread.php?7150-rkpatchomatic-tool-overclock-vsync-fix-any-binary-rk3188-kernel!
+[Freaktab](http://www.freaktab.com/showthread.php?7150-rkpatchomatic-tool-overclock-vsync-fix-any-binary-rk3188-kernel!)
 
 About
 ------
