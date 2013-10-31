@@ -37,6 +37,7 @@ for ( my $mhz = 100 ; $mhz <= 2500 ; $mhz++ ) {
 
 # CPU profiles
 my %cpu_profiles = (
+  "cpustock" => 0,
   "cpu1608h" =>
     [
       [1150000, 1200000],
@@ -66,6 +67,7 @@ my %cpu_profiles = (
 
 # GPU profiles
 my %gpu_profiles = (
+  "gpustock" => 0,
   "gpu600" =>
     [
       [975000, 133000],
@@ -97,6 +99,7 @@ my %gpu_profiles = (
 # 4 DDR_FREQ_SUSPEND
 # only 1 and 2 seem to be used in the source code for Android sticks and even though 2 is set it doesn't seem to be used
 my %ddr_profiles = (
+  "ddrstock" => 0,
 #  "ddr400" =>
 #    [
 #      [1000000, 300002],
@@ -304,7 +307,7 @@ sub display_table {
 
 print "=============================\n";
 print "Rockchip Patchomatic Suite\n";
-print "Overclockomatic v1.0\n";
+print "Overclockomatic RK3188 v1.1\n";
 print "by phjanderson\n";
 print "=============================\n\n";
 
@@ -414,45 +417,69 @@ foreach my $cpu_profile_key (keys %cpu_profiles) {
       my $target_buffer = $buffer;
       
       my $cpu_profile_table_ref = $cpu_profiles{ $cpu_profile_key };
-      my $cpu_profile_table_length = @{$cpu_profile_table_ref};
+      my $cpu_profile_table_length = 0;
+      if ( $cpu_profile_table_ref != 0 ) {
+        $cpu_profile_table_length = @{$cpu_profile_table_ref};
+      }
 
       my $gpu_profile_table_ref = $gpu_profiles{ $gpu_profile_key };
-      my $gpu_profile_table_length = @{$gpu_profile_table_ref};
+      my $gpu_profile_table_length = 0;
+      if ( $gpu_profile_table_ref != 0 ) {
+        $gpu_profile_table_length = @{$gpu_profile_table_ref};
+      }
 
       my $ddr_profile_table_ref = $ddr_profiles{ $ddr_profile_key };
-      my $ddr_profile_table_length = @{$ddr_profile_table_ref};
-
-      if ( $cpu_profile_table_length > $cpu_table_length ) {
-        print "ERROR: CPU profile table is larger than the CPU table in the kernel";
-        exit -1;
+      my $ddr_profile_table_length = 0;
+      if ( $ddr_profile_table_ref != 0 ) {
+        $ddr_profile_table_length = @{$ddr_profile_table_ref};
+      }
+      
+      if ( $cpu_profile_table_ref != 0 ) {
+        if ( $cpu_profile_table_length > $cpu_table_length ) {
+          print "ERROR: CPU profile table $cpu_profile_key is larger than the CPU table in the kernel";
+          exit -1;
+        }
+        else {
+          my $new_cpu_table_data = pack_table_data( $cpu_profile_table_ref ) . ($freq_table_end x ($cpu_table_length - $cpu_profile_table_length));
+          my $new_cpu_table_data_length = length( $new_cpu_table_data );
+          
+          $target_buffer = substr( $target_buffer, 0, $cpu_table_offset) . $new_cpu_table_data . substr( $target_buffer, $cpu_table_offset + $new_cpu_table_data_length);
+        }
       }
       else {
-        my $new_cpu_table_data = pack_table_data( $cpu_profile_table_ref ) . ($freq_table_end x ($cpu_table_length - $cpu_profile_table_length));
-        my $new_cpu_table_data_length = length( $new_cpu_table_data );
-        
-        $target_buffer = substr( $target_buffer, 0, $cpu_table_offset) . $new_cpu_table_data . substr( $target_buffer, $cpu_table_offset + $new_cpu_table_data_length);
-      }
- 
-      if ( $gpu_profile_table_length > $gpu_table_length ) {
-        print "ERROR: GPU profile table is larger than the GPU table in the kernel";
-        exit -1;
-      }
-      else {
-        my $new_gpu_table_data = pack_table_data( $gpu_profile_table_ref ) . ($freq_table_end x ($gpu_table_length - $gpu_profile_table_length));
-        my $new_gpu_table_data_length = length( $new_gpu_table_data );
-        
-        $target_buffer = substr( $target_buffer, 0, $gpu_table_offset) . $new_gpu_table_data . substr( $target_buffer, $gpu_table_offset + $new_gpu_table_data_length);
+        #print "CPU stock mode, not patching the CPU table\n";
       }
 
-      if ( $ddr_profile_table_length > $ddr_table_length ) {
-        print "ERROR: DDR profile table is larger than the DDR table in the kernel";
-        exit -1;
+      if ( $gpu_profile_table_ref != 0 ) {
+        if ( $gpu_profile_table_length > $gpu_table_length ) {
+          print "ERROR: GPU profile table $gpu_profile_key is larger than the GPU table in the kernel";
+          exit -1;
+        }
+        else {
+          my $new_gpu_table_data = pack_table_data( $gpu_profile_table_ref ) . ($freq_table_end x ($gpu_table_length - $gpu_profile_table_length));
+          my $new_gpu_table_data_length = length( $new_gpu_table_data );
+          
+          $target_buffer = substr( $target_buffer, 0, $gpu_table_offset) . $new_gpu_table_data . substr( $target_buffer, $gpu_table_offset + $new_gpu_table_data_length);
+        }
       }
       else {
-        my $new_ddr_table_data = pack_table_data( $ddr_profile_table_ref ) . ($freq_table_end x ($ddr_table_length - $ddr_profile_table_length));
-        my $new_ddr_table_data_length = length( $new_ddr_table_data );
-        
-        $target_buffer = substr( $target_buffer, 0, $ddr_table_offset) . $new_ddr_table_data . substr( $target_buffer, $ddr_table_offset + $new_ddr_table_data_length);
+        #print "GPU stock mode, not patching the GPU table\n";
+      }
+
+      if ( $ddr_profile_table_ref != 0 ) {
+        if ( $ddr_profile_table_length > $ddr_table_length ) {
+          print "ERROR: DDR profile table $ddr_profile_key is larger than the DDR table in the kernel";
+          exit -1;
+        }
+        else {
+          my $new_ddr_table_data = pack_table_data( $ddr_profile_table_ref ) . ($freq_table_end x ($ddr_table_length - $ddr_profile_table_length));
+          my $new_ddr_table_data_length = length( $new_ddr_table_data );
+          
+          $target_buffer = substr( $target_buffer, 0, $ddr_table_offset) . $new_ddr_table_data . substr( $target_buffer, $ddr_table_offset + $new_ddr_table_data_length);
+        }
+      }
+      else {
+        #print "DDR stock mode, not patching the DDR table\n";
       }
 
       my $crc = calculate_rkcrc( substr( $target_buffer, 8, -4 ) );

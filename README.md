@@ -24,7 +24,7 @@ Allows you to overclock your CPU/GPU/DDR. This tool will search for volt/frequen
 You can modify these profiles by editing the source code. Please remember that they cannot be longer than the frequency tables inside the kernel you are patching. Also, 1.375v is currently the upper limit as it is capped elsewhere in most RK3188 kernels, perhaps this can also be patched in the binary but I don't know how yet.
 
 Usage (RK3188):  
-./overclockomatic kernel.img
+./overclockomatic3188 kernel.img
 
 Usage (RK3066):  
 ./overclockomatic3066 kernel.img

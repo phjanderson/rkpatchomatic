@@ -175,6 +175,7 @@ my %ddr_profiles_3_0_8 = (
 # 4 DDR_FREQ_SUSPEND
 # not all have to be defined and some might be ignored
 my %ddr_profiles_3_0_36 = (
+  "ddrstock" => 0,
   "ddr400" =>
     [
       [1050000, 200004],
@@ -479,7 +480,7 @@ sub display_vfl_table {
 
 print "=============================\n";
 print "Rockchip Patchomatic Suite\n";
-print "Overclockomatic 3066 v0.9\n";
+print "Overclockomatic RK3066 v1.0\n";
 print "by phjanderson\n";
 print "=============================\n\n";
 
