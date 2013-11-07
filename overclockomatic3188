@@ -18,6 +18,20 @@
 
 use strict;
 
+# GPU frequency cap search list
+my @gpu_cap_search_list = (
+  [133000000, 266000000],
+  [133000000, 400000000],
+  [133000000, 466000000],
+  [133000000, 500000000],
+  [133000000, 533000000],
+  [133000000, 600000000],
+);
+
+# GPU frequency cap replacement
+my @gpu_cap_replace = (133000000, 800000000);
+
+
 # these voltages are used to search for voltage/frequency tables
 my @volt_list = (800000, 825000, 850000, 875000, 900000, 925000, 950000, 975000, 1000000, 1025000, 1050000, 1075000, 1100000, 1125000, 1150000, 1175000, 1200000, 1225000, 1250000, 1275000, 1300000, 1325000, 1350000, 1375000, 1400000, 1425000, 1450000);
 
@@ -33,7 +47,6 @@ for ( my $mhz = 100 ; $mhz <= 2500 ; $mhz++ ) {
 
 # below are the profiles used for the patched kernels
 # please remember that they cannot be longer than the frequency tables inside the kernel you are patching
-# also, 1.375v is currently the upper limit as it is capped elsewhere in the kernel, perhaps this can also be patched in the binary but I don't know how yet
 
 # CPU profiles
 my %cpu_profiles = (
@@ -56,39 +69,37 @@ my %cpu_profiles = (
       [1350000, 1608000],
       [1375000, 1800000],
     ],
-# requires more than 1.375v, not possible at this moment
-#  "cpu1920h" =>
-#    [
-#      [1150000, 1200000],
-#      [1350000, 1608000],
-#      [1450000, 1920000],
-#    ],
+  "cpu1920h" =>
+    [
+      [1150000, 1200000],
+      [1350000, 1608000],
+      [1450000, 1920000],
+    ],
   );
 
 # GPU profiles
 my %gpu_profiles = (
   "gpustock" => 0,
-  "gpu600" =>
-    [
-      [975000, 133000],
-      [1000000, 200000],
-      [1025000, 266000],
-      [1050000, 300000],
-      [1100000, 400000],
-      [1250000, 600000],
-   ],
+#  "gpu600" =>
+#    [
+#      [975000, 133000],
+#      [1000000, 200000],
+#      [1025000, 266000],
+#      [1050000, 300000],
+#      [1100000, 400000],
+#      [1250000, 600000],
+#   ],
 #  "gpu600h" =>
 #    [
 #      [1100000, 400000],
 #      [1250000, 600000],
 #    ],
-# probably requires more than 1.375v, not possible at this moment
-#  "gpu798h" =>
-#    [
-#      [1100000, 400000],
-#      [1250000, 600000],
-#      [1375000, 798000],
-#   ],
+  "gpu798h" =>
+    [
+      [1100000, 400000],
+      [1250000, 600000],
+      [1375000, 798000],
+   ],
   );
 
 # DDR profiles
@@ -327,6 +338,45 @@ my $target_ext = substr( $srcfile, length( $target_base ) );
 print "Reading kernel image\n";
 my $buffer = read_kernel( $srcfile );
 print "Done!\n\n";
+
+
+print "Searching GPU frequency limit cap\n";
+my $gpu_cap_found = 0;
+for my $gpu_cap_search (@gpu_cap_search_list) {
+  my $gpu_cap_search_data = pack("V", $gpu_cap_search->[0]) . pack("V", $gpu_cap_search->[1]);
+  my $gpu_cap_search_count =()= $buffer =~ /\Q$gpu_cap_search_data\E/g;
+  if ( $gpu_cap_search_count == 1 ) {
+    print "Found: " . $gpu_cap_search->[0] . ", " . $gpu_cap_search->[1] . "\n";
+    print "Patching...\n";
+    my $gpu_cap_replace_data = pack("V", $gpu_cap_replace[0]) . pack("V", $gpu_cap_replace[1]);
+    $buffer =~ s/\Q$gpu_cap_search_data\E/$gpu_cap_replace_data/g;
+    $gpu_cap_found = 1;
+    last;
+  }
+}
+if( !$gpu_cap_found ) {
+  print "Warning: unable to patch the GPU frequency limit cap!\n";
+
+  print "Searching GPU frequency limit cap (reversed)\n";
+  $gpu_cap_found = 0;
+  for my $gpu_cap_search (@gpu_cap_search_list) {
+    my $gpu_cap_search_data = pack("V", $gpu_cap_search->[1]) . pack("V", $gpu_cap_search->[0]);
+    my $gpu_cap_search_count =()= $buffer =~ /\Q$gpu_cap_search_data\E/g;
+    if ( $gpu_cap_search_count == 1 ) {
+      print "Found: " . $gpu_cap_search->[0] . ", " . $gpu_cap_search->[1] . "\n";
+      print "Patching...\n";
+      my $gpu_cap_replace_data = pack("V", $gpu_cap_replace[1]) . pack("V", $gpu_cap_replace[0]);
+      $buffer =~ s/\Q$gpu_cap_search_data\E/$gpu_cap_replace_data/g;
+      $gpu_cap_found = 1;
+      last;
+    }
+  }
+  if( !$gpu_cap_found ) {
+    print "Warning: unable to patch the GPU frequency limit cap (reversed)!\n";
+  }
+}
+print "\n";
+
 
 print "Searching volt/frequency tables\n";
 my $tables_ref = find_tables( $buffer, \@freq_list, \@volt_list );
