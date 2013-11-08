@@ -318,7 +318,7 @@ sub display_table {
 
 print "=============================\n";
 print "Rockchip Patchomatic Suite\n";
-print "Overclockomatic RK3188 v1.1\n";
+print "Overclockomatic RK3188 v1.2\n";
 print "by phjanderson\n";
 print "=============================\n\n";
 
